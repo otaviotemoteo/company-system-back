@@ -1,0 +1,5 @@
+export enum PhaseStatus {
+  NAO_INICIADO = 'NAO_INICIADO',
+  EM_PROGRESSO = 'EM_PROGRESSO',
+  CONCLUIDO = 'CONCLUIDO',
+}
