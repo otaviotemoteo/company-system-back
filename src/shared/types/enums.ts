@@ -1,0 +1,50 @@
+export enum Role {
+  ADMIN = "ADMIN",
+  GERENTE = "GERENTE",
+  FUNCIONARIO = "FUNCIONARIO",
+}
+
+export enum ProjectStatus {
+  PLANEJAMENTO = "PLANEJAMENTO",
+  EM_ANDAMENTO = "EM_ANDAMENTO",
+  EM_PAUSA = "EM_PAUSA",
+  CONCLUIDO = "CONCLUIDO",
+  CANCELADO = "CANCELADO",
+}
+
+export enum ProjectPriority {
+  BAIXA = "BAIXA",
+  MEDIA = "MEDIA",
+  ALTA = "ALTA",
+  URGENTE = "URGENTE",
+}
+
+export enum PhaseStatus {
+  NAO_INICIADA = "NAO_INICIADA",
+  EM_ANDAMENTO = "EM_ANDAMENTO",
+  CONCLUIDA = "CONCLUIDA",
+  BLOQUEADA = "BLOQUEADA",
+}
+
+export enum TaskStatus {
+  PENDENTE = "PENDENTE",
+  EM_ANDAMENTO = "EM_ANDAMENTO",
+  EM_REVISAO = "EM_REVISAO",
+  CONCLUIDA = "CONCLUIDA",
+  BLOQUEADA = "BLOQUEADA",
+}
+
+export enum TaskPriority {
+  BAIXA = "BAIXA",
+  MEDIA = "MEDIA",
+  ALTA = "ALTA",
+  URGENTE = "URGENTE",
+}
+
+export enum DocumentType {
+  CONTRATO = "CONTRATO",
+  ESPECIFICACAO = "ESPECIFICACAO",
+  RELATORIO = "RELATORIO",
+  ENTREGA = "ENTREGA",
+  OUTRO = "OUTRO",
+}

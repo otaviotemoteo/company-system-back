@@ -1,14 +1,225 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  GERENTE
+  FUNCIONARIO
+}
+
+enum ProjectStatus {
+  PLANEJAMENTO
+  EM_ANDAMENTO
+  EM_PAUSA
+  CONCLUIDO
+  CANCELADO
+}
+
+enum ProjectPriority {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum PhaseStatus {
+  NAO_INICIADA
+  EM_ANDAMENTO
+  CONCLUIDA
+  BLOQUEADA
+}
+
+enum TaskStatus {
+  PENDENTE
+  EM_ANDAMENTO
+  EM_REVISAO
+  CONCLUIDA
+  BLOQUEADA
+}
+
+enum TaskPriority {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum DocumentType {
+  CONTRATO
+  ESPECIFICACAO
+  RELATORIO
+  ENTREGA
+  OUTRO
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(FUNCIONARIO)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  managedProjects Project[]       @relation("ProjectManager")
+  projectMembers  ProjectMember[]
+  assignedTasks   Task[]
+  comments        Comment[]
+  documents       Document[]
+  activityLogs    ActivityLog[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String          @id @default(uuid())
+  title       String
+  description String?
+  status      ProjectStatus   @default(PLANEJAMENTO)
+  priority    ProjectPriority @default(MEDIA)
+  budget      Float?
+  startDate   DateTime?
+  endDate     DateTime?
+  deadline    DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relações
+  managerId String
+  manager   User   @relation("ProjectManager", fields: [managerId], references: [id])
+
+  phases         ProjectPhase[]
+  members        ProjectMember[]
+  documents      Document[]
+  activityLogs   ActivityLog[]
+
+  @@map("projects")
+}
+
+model ProjectPhase {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  order       Int
+  status      PhaseStatus @default(NAO_INICIADA)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relações
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  tasks     Task[]
+  documents Document[]
+
+  @@map("project_phases")
+}
+
+model Task {
+  id               String       @id @default(uuid())
+  title            String
+  description      String?
+  status           TaskStatus   @default(PENDENTE)
+  priority         TaskPriority @default(MEDIA)
+  estimatedHours   Float?
+  workedHours      Float        @default(0)
+  deadline         DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relações
+  phaseId String
+  phase   ProjectPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+
+  assignedToId String?
+  assignedTo   User?   @relation(fields: [assignedToId], references: [id])
+
+  comments  Comment[]
+  documents Document[]
+
+  @@map("tasks")
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  role      String // Ex: "Desenvolvedor", "Designer"
+  joinedAt  DateTime @default(now())
+
+  // Relações
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@map("project_members")
+}
+
+model Document {
+  id          String       @id @default(uuid())
+  name        String
+  type        DocumentType
+  fileUrl     String
+  fileSize    Int
+  description String?
+  createdAt   DateTime     @default(now())
+
+  // Relações
+  uploadedById String
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id])
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  phaseId String?
+  phase   ProjectPhase? @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  action      String // Ex: "CREATED_PROJECT", "UPDATED_TASK"
+  description String
+  createdAt   DateTime @default(now())
+
+  // Relações
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("activity_logs")
 }
