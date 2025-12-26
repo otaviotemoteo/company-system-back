@@ -1,4 +1,8 @@
+import { config } from "dotenv";
 import { z } from "zod";
+
+// Carregar variáveis de ambiente
+config();
 
 const envSchema = z.object({
   DATABASE_URL: z.string(),
