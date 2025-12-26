@@ -10,13 +10,6 @@ export async function swaggerPlugin(app: FastifyInstance) {
         description: "API para gerenciamento de projetos",
         version: "1.0.0",
       },
-      securityDefinitions: {
-        Bearer: {
-          type: "apiKey",
-          name: "Authorization",
-          in: "header",
-        },
-      },
     },
   });
 
