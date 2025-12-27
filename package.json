@@ -9,7 +9,11 @@
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "keywords": [],
   "author": "",
@@ -32,8 +36,12 @@
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^25.0.3",
+    "@types/supertest": "^6.0.3",
+    "@vitest/ui": "^4.0.16",
     "prisma": "^6.19.1",
+    "supertest": "^7.1.4",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
   }
 }
