@@ -1,9 +1,12 @@
 import { FastifyInstance } from "fastify";
 import fastifyCors from "@fastify/cors";
+import fastifyPlugin from "fastify-plugin";
 
-export async function corsPlugin(app: FastifyInstance) {
-  app.register(fastifyCors, {
-    origin: true, // change when in production
+async function corsPluginFunction(app: FastifyInstance) {
+  await app.register(fastifyCors, {
+    origin: true,
     credentials: true,
   });
 }
+
+export const corsPlugin = fastifyPlugin(corsPluginFunction);

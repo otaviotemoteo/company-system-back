@@ -1,19 +1,43 @@
 import { FastifyInstance } from "fastify";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
+import fastifyPlugin from "fastify-plugin";
 
-export async function swaggerPlugin(app: FastifyInstance) {
-  app.register(fastifySwagger, {
-    swagger: {
+async function swaggerPluginFunction(app: FastifyInstance) {
+  await app.register(fastifySwagger, {
+    openapi: {
+      openapi: "3.0.0",
       info: {
         title: "Project Manager API",
         description: "API para gerenciamento de projetos",
         version: "1.0.0",
       },
+      servers: [
+        {
+          url: "http://localhost:3333",
+          description: "Development server",
+        },
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+          },
+        },
+      },
     },
   });
 
-  app.register(fastifySwaggerUi, {
+  await app.register(fastifySwaggerUi, {
     routePrefix: "/docs",
+    uiConfig: {
+      docExpansion: "list",
+      deepLinking: false,
+    },
+    staticCSP: true,
   });
 }
+
+export const swaggerPlugin = fastifyPlugin(swaggerPluginFunction);

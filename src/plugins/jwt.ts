@@ -1,14 +1,20 @@
 import { FastifyInstance } from "fastify";
 import fastifyJwt from "@fastify/jwt";
+import fastifyPlugin from "fastify-plugin";
 import { env } from "../config/env";
 
-export async function jwtPlugin(app: FastifyInstance) {
-  app.register(fastifyJwt, {
+async function jwtPluginFunction(app: FastifyInstance) {
+  console.log("🔐 Registrando JWT plugin...");
+  console.log("JWT_SECRET:", env.JWT_SECRET ? "Definido ✅" : "INDEFINIDO ❌");
+
+  await app.register(fastifyJwt, {
     secret: env.JWT_SECRET,
     sign: {
       expiresIn: "24h",
     },
   });
+
+  console.log("✅ JWT plugin registrado!");
 
   app.decorate("authenticate", async (request: any, reply: any) => {
     try {
@@ -18,3 +24,5 @@ export async function jwtPlugin(app: FastifyInstance) {
     }
   });
 }
+
+export const jwtPlugin = fastifyPlugin(jwtPluginFunction);
