@@ -4,6 +4,7 @@ import { jwtPlugin } from "./plugins/jwt";
 import { swaggerPlugin } from "./plugins/swagger";
 import { errorHandler } from "./shared/middlewares/error-handler";
 import { authRoutes } from "./modules/auth/auth.routes";
+import { usersRoutes } from "./modules/users/users.routes";
 
 export async function buildApp() {
   const app = Fastify({
@@ -22,6 +23,7 @@ export async function buildApp() {
   });
 
   await app.register(authRoutes, { prefix: "/api/auth" });
+  await app.register(usersRoutes, { prefix: "/api/users" });
 
   await app.ready();
 
