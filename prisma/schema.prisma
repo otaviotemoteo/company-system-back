@@ -59,16 +59,17 @@ enum DocumentType {
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   name      String
-  email     String   @unique
+  email     String    @unique
   password  String
-  role      Role     @default(FUNCIONARIO)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      Role      @default(FUNCIONARIO)
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  // Relações
+  // Relações...
   managedProjects Project[]       @relation("ProjectManager")
   projectMembers  ProjectMember[]
   assignedTasks   Task[]
