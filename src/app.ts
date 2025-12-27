@@ -10,21 +10,22 @@ export async function buildApp() {
     logger: true,
   });
 
-  // plugins
+  console.log("🚀 Iniciando aplicação...");
+
   await app.register(corsPlugin);
   await app.register(jwtPlugin);
   await app.register(swaggerPlugin);
-
-  // global error handler
   app.setErrorHandler(errorHandler);
 
-  // health check
   app.get("/health", async () => {
     return { status: "ok", timestamp: new Date().toISOString() };
   });
 
-  // routes
   await app.register(authRoutes, { prefix: "/api/auth" });
+
+  await app.ready();
+
+  console.log("✅ Aplicação iniciada com sucesso!");
 
   return app;
 }

@@ -6,51 +6,56 @@ import { authenticate } from "../../shared/middlewares/authenticate";
 const authService = new AuthService();
 
 export async function authRoutes(app: FastifyInstance) {
-  // POST /auth/register - Registrar novo usuário
-  app.post("/register", {
-    schema: {
-      description: "Registrar novo usuário",
-      tags: ["Auth"],
-      body: {
-        type: "object",
-        properties: {
-          name: { type: "string", minLength: 3 },
-          email: { type: "string", format: "email" },
-          password: { type: "string", minLength: 6 },
-          role: { type: "string", enum: ["ADMIN", "GERENTE", "FUNCIONARIO"] },
-        },
-        required: ["name", "email", "password"],
-      },
-      response: {
-        201: {
-          description: "Usuário criado com sucesso",
+  // POST /auth/register
+  app.post(
+    "/register",
+    {
+      schema: {
+        description: "Registrar novo usuário",
+        tags: ["Auth"],
+        body: {
           type: "object",
+          required: ["name", "email", "password"],
           properties: {
-            token: { type: "string" },
-            user: {
-              type: "object",
-              properties: {
-                id: { type: "string" },
-                name: { type: "string" },
-                email: { type: "string" },
-                role: { type: "string" },
-              },
+            name: { type: "string", minLength: 3 },
+            email: { type: "string", format: "email" },
+            password: { type: "string", minLength: 6 },
+            role: {
+              type: "string",
+              enum: ["ADMIN", "GERENTE", "FUNCIONARIO"],
             },
           },
         },
-        400: {
-          description: "Erro ao registrar usuário",
-          type: "object",
-          properties: {
-            error: { type: "string" },
+        response: {
+          201: {
+            description: "Usuário criado com sucesso",
+            type: "object",
+            properties: {
+              token: { type: "string" },
+              user: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  name: { type: "string" },
+                  email: { type: "string" },
+                  role: { type: "string" },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Erro de validação",
+            type: "object",
+            properties: {
+              error: { type: "string" },
+            },
           },
         },
       },
     },
-    handler: async (request, reply) => {
+    async (request, reply) => {
       try {
         const data = registerSchema.parse(request.body);
-
         const result = await authService.register(data);
 
         const token = app.jwt.sign({
@@ -68,52 +73,54 @@ export async function authRoutes(app: FastifyInstance) {
           error: error.message || "Erro ao registrar usuário",
         });
       }
-    },
-  });
+    }
+  );
 
-  // POST /auth/login - Login
-  app.post("/login", {
-    schema: {
-      description: "Fazer login",
-      tags: ["Auth"],
-      body: {
-        type: "object",
-        properties: {
-          email: { type: "string", format: "email" },
-          password: { type: "string", minLength: 6 },
-        },
-        required: ["email", "password"],
-      },
-      response: {
-        200: {
-          description: "Login realizado com sucesso",
+  // POST /auth/login
+  app.post(
+    "/login",
+    {
+      schema: {
+        description: "Fazer login no sistema",
+        tags: ["Auth"],
+        body: {
           type: "object",
+          required: ["email", "password"],
           properties: {
-            token: { type: "string" },
-            user: {
-              type: "object",
-              properties: {
-                id: { type: "string" },
-                name: { type: "string" },
-                email: { type: "string" },
-                role: { type: "string" },
+            email: { type: "string", format: "email" },
+            password: { type: "string", minLength: 6 },
+          },
+        },
+        response: {
+          200: {
+            description: "Login realizado com sucesso",
+            type: "object",
+            properties: {
+              token: { type: "string" },
+              user: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  name: { type: "string" },
+                  email: { type: "string" },
+                  role: { type: "string" },
+                },
               },
             },
           },
-        },
-        401: {
-          description: "Email ou senha inválidos",
-          type: "object",
-          properties: {
-            error: { type: "string" },
+          401: {
+            description: "Credenciais inválidas",
+            type: "object",
+            properties: {
+              error: { type: "string" },
+            },
           },
         },
       },
     },
-    handler: async (request, reply) => {
+    async (request, reply) => {
       try {
         const data = loginSchema.parse(request.body);
-
         const result = await authService.login(data);
 
         const token = app.jwt.sign({
@@ -131,40 +138,50 @@ export async function authRoutes(app: FastifyInstance) {
           error: error.message || "Email ou senha inválidos",
         });
       }
-    },
-  });
+    }
+  );
 
-  // GET /auth/me - Obter dados do usuário logado
-  app.get("/me", {
-    preHandler: [authenticate],
-    schema: {
-      description: "Obter dados do usuário logado",
-      tags: ["Auth"],
-      security: [{ Bearer: [] }],
-      response: {
-        200: {
-          description: "Dados do usuário",
-          type: "object",
-          properties: {
-            id: { type: "string" },
-            name: { type: "string" },
-            email: { type: "string" },
-            role: { type: "string" },
+  // GET /auth/me
+  app.get(
+    "/me",
+    {
+      preHandler: [authenticate],
+      schema: {
+        description: "Obter dados do usuário logado",
+        tags: ["Auth"],
+        security: [{ bearerAuth: [] }],
+        response: {
+          200: {
+            description: "Dados do usuário",
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              name: { type: "string" },
+              email: { type: "string" },
+              role: { type: "string" },
+              isActive: { type: "boolean" },
+            },
           },
-        },
-        404: {
-          description: "Usuário não encontrado",
-          type: "object",
-          properties: {
-            error: { type: "string" },
+          401: {
+            description: "Token inválido",
+            type: "object",
+            properties: {
+              error: { type: "string" },
+            },
+          },
+          404: {
+            description: "Usuário não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string" },
+            },
           },
         },
       },
     },
-    handler: async (request, reply) => {
+    async (request, reply) => {
       try {
         const userId = (request as any).user.id;
-
         const user = await authService.getUserById(userId);
 
         return reply.status(200).send(user);
@@ -173,6 +190,6 @@ export async function authRoutes(app: FastifyInstance) {
           error: error.message || "Usuário não encontrado",
         });
       }
-    },
-  });
+    }
+  );
 }
