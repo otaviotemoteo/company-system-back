@@ -57,6 +57,46 @@ export class TestHelpers {
     });
   }
 
+  static async createPhase(
+    projectId: string,
+    data?: {
+      name?: string;
+      description?: string;
+      order?: number;
+    }
+  ) {
+    return await prisma.projectPhase.create({
+      data: {
+        name: data?.name || "Test Phase",
+        description: data?.description || "Test Phase Description",
+        order: data?.order || 1,
+        projectId,
+      },
+    });
+  }
+
+  static async createTask(
+    phaseId: string,
+    data?: {
+      title?: string;
+      description?: string;
+      assignedToId?: string;
+      priority?: "BAIXA" | "MEDIA" | "ALTA" | "URGENTE";
+      estimatedHours?: number;
+    }
+  ) {
+    return await prisma.task.create({
+      data: {
+        title: data?.title || "Test Task",
+        description: data?.description || "Test Task Description",
+        phaseId,
+        assignedToId: data?.assignedToId,
+        priority: data?.priority || "MEDIA",
+        estimatedHours: data?.estimatedHours,
+      },
+    });
+  }
+
   static generateToken(
     app: FastifyInstance,
     user: { id: string; email: string; role: string }

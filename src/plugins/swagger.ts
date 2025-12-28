@@ -12,12 +12,6 @@ async function swaggerPluginFunction(app: FastifyInstance) {
         description: "API para gerenciamento de projetos",
         version: "1.0.0",
       },
-      servers: [
-        {
-          url: "http://localhost:3333",
-          description: "Development server",
-        },
-      ],
       components: {
         securitySchemes: {
           bearerAuth: {
