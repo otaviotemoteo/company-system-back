@@ -204,8 +204,22 @@ export async function usersRoutes(app: FastifyInstance) {
               updatedAt: { type: "string" },
             },
           },
+          400: {
+            description: "Erro de validação",
+            type: "object",
+            properties: {
+              error: { type: "string" },
+            },
+          },
           404: {
             description: "Usuário não encontrado",
+            type: "object",
+            properties: {
+              error: { type: "string" },
+            },
+          },
+          500: {
+            description: "Erro interno do servidor",
             type: "object",
             properties: {
               error: { type: "string" },
@@ -221,7 +235,16 @@ export async function usersRoutes(app: FastifyInstance) {
         const user = await usersService.update(id, data);
         return reply.status(200).send(user);
       } catch (error: any) {
-        return reply.status(404).send({ error: error.message });
+        if (error.name === "ZodError") {
+          return reply.status(400).send({ error: error.message });
+        }
+        if (error.message.includes("Email já cadastrado")) {
+          return reply.status(400).send({ error: error.message });
+        }
+        if (error.message.includes("Usuário não encontrado")) {
+          return reply.status(404).send({ error: error.message });
+        }
+        return reply.status(500).send({ error: error.message });
       }
     }
   );
