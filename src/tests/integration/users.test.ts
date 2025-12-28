@@ -22,24 +22,21 @@ describe("Users Routes", () => {
     // Limpar banco antes de cada teste
     await TestHelpers.clearDatabase();
 
-    // Criar usuários de teste
+    // Criar usuários de teste (emails únicos automáticos)
     adminUser = await TestHelpers.createUser({
       name: "Admin User",
-      email: "admin@test.com",
       password: "123456",
       role: "ADMIN",
     });
 
     gerenteUser = await TestHelpers.createUser({
       name: "Gerente User",
-      email: "gerente@test.com",
       password: "123456",
       role: "GERENTE",
     });
 
     funcionarioUser = await TestHelpers.createUser({
       name: "Funcionario User",
-      email: "funcionario@test.com",
       password: "123456",
       role: "FUNCIONARIO",
     });
@@ -68,12 +65,12 @@ describe("Users Routes", () => {
       expect(response.statusCode).toBe(200);
       const users = JSON.parse(response.body);
       expect(Array.isArray(users)).toBe(true);
-      expect(users.length).toBeGreaterThanOrEqual(3); // Pelo menos os 3 usuários criados
+      expect(users.length).toBeGreaterThanOrEqual(3);
       expect(users[0]).toHaveProperty("id");
       expect(users[0]).toHaveProperty("name");
       expect(users[0]).toHaveProperty("email");
       expect(users[0]).toHaveProperty("role");
-      expect(users[0]).not.toHaveProperty("password"); // Não deve retornar senha
+      expect(users[0]).not.toHaveProperty("password");
     });
 
     it("ADMIN deve conseguir filtrar usuários por role", async () => {
@@ -140,10 +137,8 @@ describe("Users Routes", () => {
 
   describe("GET /api/users/:id - Buscar usuário por ID", () => {
     it("ADMIN deve conseguir buscar qualquer usuário", async () => {
-      // Criar um usuário específico para este teste
       const testUser = await TestHelpers.createUser({
         name: "Test User for Get",
-        email: `gettest_${Date.now()}@test.com`,
         password: "123456",
         role: "GERENTE",
       });
@@ -204,7 +199,7 @@ describe("Users Routes", () => {
     it("ADMIN deve conseguir criar novo usuário", async () => {
       const newUser = {
         name: "New User Test",
-        email: `newuser_${Date.now()}@test.com`,
+        email: TestHelpers.generateEmail("newuser"),
         password: "senha123",
         role: "FUNCIONARIO",
       };
@@ -230,7 +225,7 @@ describe("Users Routes", () => {
     it("ADMIN deve conseguir criar usuário GERENTE", async () => {
       const newUser = {
         name: "New Manager",
-        email: `manager_${Date.now()}@test.com`,
+        email: TestHelpers.generateEmail("manager"),
         password: "senha123",
         role: "GERENTE",
       };
@@ -252,7 +247,7 @@ describe("Users Routes", () => {
     it("ADMIN deve conseguir criar usuário ADMIN", async () => {
       const newUser = {
         name: "New Admin",
-        email: `admin_${Date.now()}@test.com`,
+        email: TestHelpers.generateEmail("admin"),
         password: "senha123",
         role: "ADMIN",
       };
@@ -272,18 +267,15 @@ describe("Users Routes", () => {
     });
 
     it("não deve criar usuário com email duplicado", async () => {
-      // Primeiro criar um usuário
       const firstUser = await TestHelpers.createUser({
         name: "First User",
-        email: `duplicate_${Date.now()}@test.com`,
         password: "123456",
         role: "FUNCIONARIO",
       });
 
-      // Tentar criar outro com o mesmo email
       const duplicateUser = {
         name: "Duplicate User",
-        email: firstUser.email, // Email já existente
+        email: firstUser.email,
         password: "senha123",
         role: "FUNCIONARIO",
       };
@@ -304,8 +296,8 @@ describe("Users Routes", () => {
 
     it("não deve criar usuário com nome muito curto", async () => {
       const invalidUser = {
-        name: "AB", // Nome com menos de 3 caracteres
-        email: `short_${Date.now()}@test.com`,
+        name: "AB",
+        email: TestHelpers.generateEmail("short"),
         password: "senha123",
         role: "FUNCIONARIO",
       };
@@ -325,7 +317,7 @@ describe("Users Routes", () => {
     it("não deve criar usuário com email inválido", async () => {
       const invalidUser = {
         name: "Test User",
-        email: "invalid-email", // Email inválido
+        email: "invalid-email",
         password: "senha123",
         role: "FUNCIONARIO",
       };
@@ -345,8 +337,8 @@ describe("Users Routes", () => {
     it("não deve criar usuário com senha muito curta", async () => {
       const invalidUser = {
         name: "Test User",
-        email: `test_${Date.now()}@test.com`,
-        password: "12345", // Senha com menos de 6 caracteres
+        email: TestHelpers.generateEmail("test"),
+        password: "12345",
         role: "FUNCIONARIO",
       };
 
@@ -365,7 +357,7 @@ describe("Users Routes", () => {
     it("não deve criar usuário com role inválida", async () => {
       const invalidUser = {
         name: "Test User",
-        email: `test_${Date.now()}@test.com`,
+        email: TestHelpers.generateEmail("test"),
         password: "senha123",
         role: "INVALID_ROLE",
       };
@@ -385,7 +377,6 @@ describe("Users Routes", () => {
     it("não deve criar usuário sem campos obrigatórios", async () => {
       const invalidUser = {
         name: "Test User",
-        // Faltando email, password e role
       };
 
       const response = await app.inject({
@@ -403,7 +394,7 @@ describe("Users Routes", () => {
     it("GERENTE não deve conseguir criar usuário", async () => {
       const newUser = {
         name: "New User",
-        email: `test_${Date.now()}@test.com`,
+        email: TestHelpers.generateEmail("test"),
         password: "senha123",
         role: "FUNCIONARIO",
       };
@@ -423,7 +414,7 @@ describe("Users Routes", () => {
     it("FUNCIONARIO não deve conseguir criar usuário", async () => {
       const newUser = {
         name: "New User",
-        email: `test_${Date.now()}@test.com`,
+        email: TestHelpers.generateEmail("test"),
         password: "senha123",
         role: "FUNCIONARIO",
       };
@@ -447,7 +438,6 @@ describe("Users Routes", () => {
     beforeEach(async () => {
       userToUpdate = await TestHelpers.createUser({
         name: "User to Update",
-        email: `update_${Date.now()}@test.com`,
         password: "123456",
         role: "FUNCIONARIO",
       });
@@ -475,7 +465,7 @@ describe("Users Routes", () => {
     });
 
     it("ADMIN deve conseguir atualizar email do usuário", async () => {
-      const newEmail = `newemail_${Date.now()}@test.com`;
+      const newEmail = TestHelpers.generateEmail("newemail");
       const updateData = {
         email: newEmail,
       };
@@ -509,7 +499,6 @@ describe("Users Routes", () => {
       });
 
       expect(response.statusCode).toBe(200);
-      // Verificar que a senha não é retornada
       const user = JSON.parse(response.body);
       expect(user).not.toHaveProperty("password");
     });
@@ -534,24 +523,20 @@ describe("Users Routes", () => {
     });
 
     it("não deve atualizar usuário com email duplicado", async () => {
-      // Criar usuário que será atualizado
       const userToChange = await TestHelpers.createUser({
         name: "User to Change",
-        email: `tochange_${Date.now()}@test.com`,
         password: "123456",
         role: "FUNCIONARIO",
       });
 
-      // Criar outro usuário para gerar conflito de email
       const anotherUser = await TestHelpers.createUser({
         name: "Another User",
-        email: `another_${Date.now()}@test.com`,
         password: "123456",
         role: "FUNCIONARIO",
       });
 
       const updateData = {
-        email: anotherUser.email, // Email já existente
+        email: anotherUser.email,
       };
 
       const response = await app.inject({
@@ -570,7 +555,7 @@ describe("Users Routes", () => {
 
     it("não deve atualizar usuário com dados inválidos", async () => {
       const updateData = {
-        name: "AB", // Nome muito curto
+        name: "AB",
       };
 
       const response = await app.inject({
@@ -643,7 +628,6 @@ describe("Users Routes", () => {
     beforeEach(async () => {
       userToDelete = await TestHelpers.createUser({
         name: "User to Delete",
-        email: `delete_${Date.now()}@test.com`,
         password: "123456",
         role: "FUNCIONARIO",
       });
@@ -662,7 +646,6 @@ describe("Users Routes", () => {
       const result = JSON.parse(response.body);
       expect(result.message).toContain("desativado com sucesso");
 
-      // Verificar que o usuário foi desativado (soft delete)
       const user = await prisma.user.findUnique({
         where: { id: userToDelete.id },
       });

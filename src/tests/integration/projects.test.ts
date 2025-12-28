@@ -12,7 +12,6 @@ describe("Projects Routes", () => {
   });
 
   beforeEach(async () => {
-    // Limpar banco antes de cada teste
     await TestHelpers.clearDatabase();
   });
 
@@ -24,10 +23,7 @@ describe("Projects Routes", () => {
   describe("POST /api/projects - Criar projeto", () => {
     it("ADMIN deve conseguir criar projeto", async () => {
       const admin = await TestHelpers.createUser({ role: "ADMIN" });
-      const gerente = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente@test.com",
-      });
+      const gerente = await TestHelpers.createUser({ role: "GERENTE" });
       const token = TestHelpers.generateToken(app, admin);
 
       const response = await app.inject({
@@ -114,10 +110,7 @@ describe("Projects Routes", () => {
 
     it("não deve criar projeto atribuindo FUNCIONARIO como gerente", async () => {
       const admin = await TestHelpers.createUser({ role: "ADMIN" });
-      const funcionario = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func@test.com",
-      });
+      const funcionario = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const token = TestHelpers.generateToken(app, admin);
 
       const response = await app.inject({
@@ -141,16 +134,9 @@ describe("Projects Routes", () => {
   describe("GET /api/projects - Listar projetos", () => {
     it("ADMIN deve ver todos os projetos", async () => {
       const admin = await TestHelpers.createUser({ role: "ADMIN" });
-      const gerente1 = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente1@test.com",
-      });
-      const gerente2 = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente2@test.com",
-      });
+      const gerente1 = await TestHelpers.createUser({ role: "GERENTE" });
+      const gerente2 = await TestHelpers.createUser({ role: "GERENTE" });
 
-      // Criar 2 projetos com gerentes diferentes
       await TestHelpers.createProject(gerente1.id, { title: "Projeto 1" });
       await TestHelpers.createProject(gerente2.id, { title: "Projeto 2" });
 
@@ -170,16 +156,9 @@ describe("Projects Routes", () => {
     });
 
     it("GERENTE deve ver apenas seus projetos", async () => {
-      const gerente1 = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente1@test.com",
-      });
-      const gerente2 = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente2@test.com",
-      });
+      const gerente1 = await TestHelpers.createUser({ role: "GERENTE" });
+      const gerente2 = await TestHelpers.createUser({ role: "GERENTE" });
 
-      // Criar 1 projeto para gerente1 e 1 para gerente2
       await TestHelpers.createProject(gerente1.id, {
         title: "Projeto Gerente 1",
       });
@@ -206,12 +185,8 @@ describe("Projects Routes", () => {
 
     it("FUNCIONARIO deve ver apenas projetos onde é membro", async () => {
       const gerente = await TestHelpers.createUser({ role: "GERENTE" });
-      const funcionario = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func@test.com",
-      });
+      const funcionario = await TestHelpers.createUser({ role: "FUNCIONARIO" });
 
-      // Criar 2 projetos
       const projeto1 = await TestHelpers.createProject(gerente.id, {
         title: "Projeto 1",
       });
@@ -219,7 +194,6 @@ describe("Projects Routes", () => {
         title: "Projeto 2",
       });
 
-      // Adicionar funcionário apenas no projeto1
       await TestHelpers.addProjectMember(projeto1.id, funcionario.id);
 
       const token = TestHelpers.generateToken(app, funcionario);
@@ -259,10 +233,7 @@ describe("Projects Routes", () => {
   describe("GET /api/projects/:id - Buscar projeto", () => {
     it("ADMIN deve ver qualquer projeto", async () => {
       const admin = await TestHelpers.createUser({ role: "ADMIN" });
-      const gerente = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente@test.com",
-      });
+      const gerente = await TestHelpers.createUser({ role: "GERENTE" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
       const token = TestHelpers.generateToken(app, admin);
@@ -300,14 +271,8 @@ describe("Projects Routes", () => {
     });
 
     it("GERENTE não deve ver projeto de outro gerente", async () => {
-      const gerente1 = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente1@test.com",
-      });
-      const gerente2 = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente2@test.com",
-      });
+      const gerente1 = await TestHelpers.createUser({ role: "GERENTE" });
+      const gerente2 = await TestHelpers.createUser({ role: "GERENTE" });
       const projeto = await TestHelpers.createProject(gerente2.id);
 
       const token = TestHelpers.generateToken(app, gerente1);
@@ -327,13 +292,9 @@ describe("Projects Routes", () => {
 
     it("FUNCIONARIO deve ver projeto onde é membro", async () => {
       const gerente = await TestHelpers.createUser({ role: "GERENTE" });
-      const funcionario = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func@test.com",
-      });
+      const funcionario = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
-      // Adicionar funcionário ao projeto
       await TestHelpers.addProjectMember(projeto.id, funcionario.id);
 
       const token = TestHelpers.generateToken(app, funcionario);
@@ -353,10 +314,7 @@ describe("Projects Routes", () => {
 
     it("FUNCIONARIO não deve ver projeto onde não é membro", async () => {
       const gerente = await TestHelpers.createUser({ role: "GERENTE" });
-      const funcionario = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func@test.com",
-      });
+      const funcionario = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
       const token = TestHelpers.generateToken(app, funcionario);
@@ -376,10 +334,7 @@ describe("Projects Routes", () => {
   describe("PUT /api/projects/:id - Atualizar projeto", () => {
     it("ADMIN deve conseguir atualizar qualquer projeto", async () => {
       const admin = await TestHelpers.createUser({ role: "ADMIN" });
-      const gerente = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente@test.com",
-      });
+      const gerente = await TestHelpers.createUser({ role: "GERENTE" });
       const projeto = await TestHelpers.createProject(gerente.id, {
         title: "Título Original",
       });
@@ -429,14 +384,8 @@ describe("Projects Routes", () => {
     });
 
     it("GERENTE não deve atualizar projeto de outro gerente", async () => {
-      const gerente1 = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente1@test.com",
-      });
-      const gerente2 = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente2@test.com",
-      });
+      const gerente1 = await TestHelpers.createUser({ role: "GERENTE" });
+      const gerente2 = await TestHelpers.createUser({ role: "GERENTE" });
       const projeto = await TestHelpers.createProject(gerente2.id);
 
       const token = TestHelpers.generateToken(app, gerente1);
@@ -457,10 +406,7 @@ describe("Projects Routes", () => {
 
     it("FUNCIONARIO não deve conseguir atualizar projeto", async () => {
       const gerente = await TestHelpers.createUser({ role: "GERENTE" });
-      const funcionario = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func@test.com",
-      });
+      const funcionario = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
       const token = TestHelpers.generateToken(app, funcionario);
@@ -483,10 +429,7 @@ describe("Projects Routes", () => {
   describe("DELETE /api/projects/:id - Deletar projeto", () => {
     it("ADMIN deve conseguir deletar projeto", async () => {
       const admin = await TestHelpers.createUser({ role: "ADMIN" });
-      const gerente = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente@test.com",
-      });
+      const gerente = await TestHelpers.createUser({ role: "GERENTE" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
       const token = TestHelpers.generateToken(app, admin);
@@ -522,14 +465,8 @@ describe("Projects Routes", () => {
     });
 
     it("FUNCIONARIO não deve conseguir deletar projeto", async () => {
-      const gerente = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente@test.com",
-      });
-      const funcionario = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func@test.com",
-      });
+      const gerente = await TestHelpers.createUser({ role: "GERENTE" });
+      const funcionario = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
       const token = TestHelpers.generateToken(app, funcionario);
@@ -549,14 +486,8 @@ describe("Projects Routes", () => {
   describe("POST /api/projects/:id/members - Adicionar membro", () => {
     it("ADMIN deve conseguir adicionar membro", async () => {
       const admin = await TestHelpers.createUser({ role: "ADMIN" });
-      const gerente = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente@test.com",
-      });
-      const funcionario = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func@test.com",
-      });
+      const gerente = await TestHelpers.createUser({ role: "GERENTE" });
+      const funcionario = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
       const token = TestHelpers.generateToken(app, admin);
@@ -581,10 +512,7 @@ describe("Projects Routes", () => {
 
     it("GERENTE deve conseguir adicionar membro ao seu projeto", async () => {
       const gerente = await TestHelpers.createUser({ role: "GERENTE" });
-      const funcionario = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func@test.com",
-      });
+      const funcionario = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
       const token = TestHelpers.generateToken(app, gerente);
@@ -607,18 +535,9 @@ describe("Projects Routes", () => {
     });
 
     it("GERENTE não deve adicionar membro em projeto de outro", async () => {
-      const gerente1 = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente1@test.com",
-      });
-      const gerente2 = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente2@test.com",
-      });
-      const funcionario = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func@test.com",
-      });
+      const gerente1 = await TestHelpers.createUser({ role: "GERENTE" });
+      const gerente2 = await TestHelpers.createUser({ role: "GERENTE" });
+      const funcionario = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente2.id);
 
       const token = TestHelpers.generateToken(app, gerente1);
@@ -642,18 +561,13 @@ describe("Projects Routes", () => {
 
     it("não deve adicionar mesmo membro duas vezes", async () => {
       const gerente = await TestHelpers.createUser({ role: "GERENTE" });
-      const funcionario = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func@test.com",
-      });
+      const funcionario = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
-      // Adicionar membro pela primeira vez
       await TestHelpers.addProjectMember(projeto.id, funcionario.id);
 
       const token = TestHelpers.generateToken(app, gerente);
 
-      // Tentar adicionar novamente
       const response = await app.inject({
         method: "POST",
         url: `/api/projects/${projeto.id}/members`,
@@ -675,14 +589,8 @@ describe("Projects Routes", () => {
   describe("DELETE /api/projects/:id/members/:memberId - Remover membro", () => {
     it("ADMIN deve conseguir remover membro", async () => {
       const admin = await TestHelpers.createUser({ role: "ADMIN" });
-      const gerente = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente@test.com",
-      });
-      const funcionario = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func@test.com",
-      });
+      const gerente = await TestHelpers.createUser({ role: "GERENTE" });
+      const funcionario = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
       await TestHelpers.addProjectMember(projeto.id, funcionario.id);
@@ -704,10 +612,7 @@ describe("Projects Routes", () => {
 
     it("GERENTE deve conseguir remover membro do seu projeto", async () => {
       const gerente = await TestHelpers.createUser({ role: "GERENTE" });
-      const funcionario = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func@test.com",
-      });
+      const funcionario = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
       await TestHelpers.addProjectMember(projeto.id, funcionario.id);
@@ -727,14 +632,8 @@ describe("Projects Routes", () => {
 
     it("FUNCIONARIO não deve conseguir remover membro", async () => {
       const gerente = await TestHelpers.createUser({ role: "GERENTE" });
-      const func1 = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func1@test.com",
-      });
-      const func2 = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func2@test.com",
-      });
+      const func1 = await TestHelpers.createUser({ role: "FUNCIONARIO" });
+      const func2 = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
       await TestHelpers.addProjectMember(projeto.id, func1.id);
@@ -757,14 +656,8 @@ describe("Projects Routes", () => {
   describe("GET /api/projects/:id/members - Listar membros", () => {
     it("ADMIN deve ver membros de qualquer projeto", async () => {
       const admin = await TestHelpers.createUser({ role: "ADMIN" });
-      const gerente = await TestHelpers.createUser({
-        role: "GERENTE",
-        email: "gerente@test.com",
-      });
-      const func = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func@test.com",
-      });
+      const gerente = await TestHelpers.createUser({ role: "GERENTE" });
+      const func = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
       await TestHelpers.addProjectMember(projeto.id, func.id);
@@ -787,10 +680,7 @@ describe("Projects Routes", () => {
 
     it("GERENTE deve ver membros do seu projeto", async () => {
       const gerente = await TestHelpers.createUser({ role: "GERENTE" });
-      const func = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func@test.com",
-      });
+      const func = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
       await TestHelpers.addProjectMember(projeto.id, func.id);
@@ -812,14 +702,8 @@ describe("Projects Routes", () => {
 
     it("FUNCIONARIO deve ver membros do projeto onde é membro", async () => {
       const gerente = await TestHelpers.createUser({ role: "GERENTE" });
-      const func1 = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func1@test.com",
-      });
-      const func2 = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func2@test.com",
-      });
+      const func1 = await TestHelpers.createUser({ role: "FUNCIONARIO" });
+      const func2 = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
       await TestHelpers.addProjectMember(projeto.id, func1.id);
@@ -842,14 +726,8 @@ describe("Projects Routes", () => {
 
     it("FUNCIONARIO não deve ver membros de projeto onde não é membro", async () => {
       const gerente = await TestHelpers.createUser({ role: "GERENTE" });
-      const func1 = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func1@test.com",
-      });
-      const func2 = await TestHelpers.createUser({
-        role: "FUNCIONARIO",
-        email: "func2@test.com",
-      });
+      const func1 = await TestHelpers.createUser({ role: "FUNCIONARIO" });
+      const func2 = await TestHelpers.createUser({ role: "FUNCIONARIO" });
       const projeto = await TestHelpers.createProject(gerente.id);
 
       await TestHelpers.addProjectMember(projeto.id, func2.id);

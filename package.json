@@ -10,10 +10,10 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "test": "vitest",
-    "test:watch": "vitest --watch",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test": "vitest --no-file-parallelism",
+    "test:watch": "vitest --watch --no-file-parallelism",
+    "test:ui": "vitest --ui --no-file-parallelism",
+    "test:coverage": "vitest --coverage --no-file-parallelism"
   },
   "keywords": [],
   "author": "",

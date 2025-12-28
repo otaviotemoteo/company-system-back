@@ -3,7 +3,12 @@ import { hashPassword } from "../../shared/utils/password";
 import { FastifyInstance } from "fastify";
 
 export class TestHelpers {
-  // Criar usuário de teste
+  private static counter = 0;
+
+  static generateEmail(prefix: string = "test"): string {
+    return `${prefix}_${Date.now()}_${++this.counter}@test.com`;
+  }
+
   static async createUser(data?: {
     name?: string;
     email?: string;
@@ -15,14 +20,13 @@ export class TestHelpers {
     return await prisma.user.create({
       data: {
         name: data?.name || "Test User",
-        email: data?.email || `test_${Date.now()}@test.com`,
+        email: data?.email || this.generateEmail(),
         password: hashedPassword,
         role: data?.role || "FUNCIONARIO",
       },
     });
   }
 
-  // Criar projeto de teste
   static async createProject(
     managerId: string,
     data?: {
@@ -39,7 +43,6 @@ export class TestHelpers {
     });
   }
 
-  // Adicionar membro ao projeto
   static async addProjectMember(
     projectId: string,
     userId: string,
@@ -54,7 +57,6 @@ export class TestHelpers {
     });
   }
 
-  // Gerar token JWT
   static generateToken(
     app: FastifyInstance,
     user: { id: string; email: string; role: string }
@@ -66,7 +68,6 @@ export class TestHelpers {
     });
   }
 
-  // Limpar banco (caso necessário)
   static async clearDatabase() {
     await prisma.activityLog.deleteMany();
     await prisma.comment.deleteMany();
