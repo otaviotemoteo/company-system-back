@@ -85,6 +85,62 @@ export async function projectsRoutes(app: FastifyInstance) {
           200: {
             description: "Dados do projeto",
             type: "object",
+            properties: {
+              id: { type: "string" },
+              title: { type: "string" },
+              description: { type: "string" },
+              status: { type: "string" },
+              priority: { type: "string" },
+              budget: { type: "number" },
+              startDate: { type: ["string", "null"] },
+              endDate: { type: ["string", "null"] },
+              deadline: { type: ["string", "null"] },
+              managerId: { type: "string" },
+              manager: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  name: { type: "string" },
+                  email: { type: "string" },
+                  role: { type: "string" },
+                },
+              },
+              members: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    userId: { type: "string" },
+                    projectId: { type: "string" },
+                    role: { type: "string" },
+                    user: {
+                      type: "object",
+                      properties: {
+                        id: { type: "string" },
+                        name: { type: "string" },
+                        email: { type: "string" },
+                        role: { type: "string" },
+                      },
+                    },
+                  },
+                },
+              },
+              phases: {
+                type: "array",
+                items: {
+                  type: "object",
+                },
+              },
+              _count: {
+                type: "object",
+                properties: {
+                  documents: { type: "number" },
+                },
+              },
+              createdAt: { type: "string" },
+              updatedAt: { type: "string" },
+            },
           },
           403: {
             description: "Sem permissão",
@@ -146,6 +202,28 @@ export async function projectsRoutes(app: FastifyInstance) {
           201: {
             description: "Projeto criado com sucesso",
             type: "object",
+            properties: {
+              id: { type: "string" },
+              title: { type: "string" },
+              description: { type: "string" },
+              status: { type: "string" },
+              priority: { type: "string" },
+              budget: { type: "number" },
+              startDate: { type: ["string", "null"] },
+              endDate: { type: ["string", "null"] },
+              deadline: { type: ["string", "null"] },
+              managerId: { type: "string" },
+              manager: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  name: { type: "string" },
+                  email: { type: "string" },
+                },
+              },
+              createdAt: { type: "string" },
+              updatedAt: { type: "string" },
+            },
           },
           400: {
             description: "Erro de validação",
@@ -213,6 +291,28 @@ export async function projectsRoutes(app: FastifyInstance) {
           200: {
             description: "Projeto atualizado com sucesso",
             type: "object",
+            properties: {
+              id: { type: "string" },
+              title: { type: "string" },
+              description: { type: "string" },
+              status: { type: "string" },
+              priority: { type: "string" },
+              budget: { type: "number" },
+              startDate: { type: ["string", "null"] },
+              endDate: { type: ["string", "null"] },
+              deadline: { type: ["string", "null"] },
+              managerId: { type: "string" },
+              manager: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  name: { type: "string" },
+                  email: { type: "string" },
+                },
+              },
+              createdAt: { type: "string" },
+              updatedAt: { type: "string" },
+            },
           },
           403: {
             description: "Sem permissão",
@@ -321,6 +421,22 @@ export async function projectsRoutes(app: FastifyInstance) {
           201: {
             description: "Membro adicionado com sucesso",
             type: "object",
+            properties: {
+              id: { type: "string" },
+              userId: { type: "string" },
+              projectId: { type: "string" },
+              role: { type: "string" },
+              user: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  name: { type: "string" },
+                  email: { type: "string" },
+                  role: { type: "string" },
+                },
+              },
+              createdAt: { type: "string" },
+            },
           },
           400: {
             description: "Erro de validação",
@@ -423,6 +539,22 @@ export async function projectsRoutes(app: FastifyInstance) {
             type: "array",
             items: {
               type: "object",
+              properties: {
+                id: { type: "string" },
+                userId: { type: "string" },
+                projectId: { type: "string" },
+                role: { type: "string" },
+                user: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    name: { type: "string" },
+                    email: { type: "string" },
+                    role: { type: "string" },
+                  },
+                },
+                createdAt: { type: "string" },
+              },
             },
           },
           403: {
