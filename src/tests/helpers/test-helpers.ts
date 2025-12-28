@@ -39,6 +39,21 @@ export class TestHelpers {
     });
   }
 
+  // Adicionar membro ao projeto
+  static async addProjectMember(
+    projectId: string,
+    userId: string,
+    role: string = "Desenvolvedor"
+  ) {
+    return await prisma.projectMember.create({
+      data: {
+        projectId,
+        userId,
+        role,
+      },
+    });
+  }
+
   // Gerar token JWT
   static generateToken(
     app: FastifyInstance,
