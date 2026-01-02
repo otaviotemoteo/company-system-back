@@ -138,7 +138,6 @@ export async function documentsRoutes(app: FastifyInstance) {
                   id: { type: "string" },
                   name: { type: "string" },
                   managerId: { type: "string" },
-                  // adicione outros campos do projeto que são retornados
                 },
               },
               phase: {
@@ -148,7 +147,6 @@ export async function documentsRoutes(app: FastifyInstance) {
                   id: { type: "string" },
                   name: { type: "string" },
                   projectId: { type: "string" },
-                  // adicione outros campos da fase que são retornados
                 },
               },
               task: {
@@ -159,7 +157,6 @@ export async function documentsRoutes(app: FastifyInstance) {
                   title: { type: "string" },
                   assignedToId: { type: "string", nullable: true },
                   phaseId: { type: "string" },
-                  // adicione outros campos da tarefa que são retornados
                 },
               },
             },

@@ -97,6 +97,34 @@ export class TestHelpers {
     });
   }
 
+  static async createDocument(
+    uploadedById: string,
+    data?: {
+      name?: string;
+      type?: "CONTRATO" | "ESPECIFICACAO" | "RELATORIO" | "ENTREGA" | "OUTRO";
+      description?: string;
+      projectId?: string;
+      phaseId?: string;
+      taskId?: string;
+      fileUrl?: string;
+      fileSize?: number;
+    }
+  ) {
+    return await prisma.document.create({
+      data: {
+        name: data?.name || "Test Document.pdf",
+        type: data?.type || "RELATORIO",
+        description: data?.description || "Test Document Description",
+        fileUrl: data?.fileUrl || "https://example.com/file.pdf",
+        fileSize: data?.fileSize || 1024,
+        uploadedById,
+        projectId: data?.projectId,
+        phaseId: data?.phaseId,
+        taskId: data?.taskId,
+      },
+    });
+  }
+
   static generateToken(
     app: FastifyInstance,
     user: { id: string; email: string; role: string }
