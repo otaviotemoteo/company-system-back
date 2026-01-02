@@ -192,7 +192,24 @@ export class DocumentsService {
       }
     }
 
-    return document;
+    // Retornar objeto serializado para evitar problemas com BigInt ou campos complexos
+    return {
+      id: document.id,
+      name: document.name,
+      type: document.type,
+      description: document.description,
+      fileUrl: document.fileUrl,
+      fileSize: document.fileSize,
+      uploadedById: document.uploadedById,
+      projectId: document.projectId,
+      phaseId: document.phaseId,
+      taskId: document.taskId,
+      createdAt: document.createdAt,
+      uploadedBy: document.uploadedBy,
+      project: document.project,
+      phase: document.phase,
+      task: document.task,
+    };
   }
 
   // Upload de documento

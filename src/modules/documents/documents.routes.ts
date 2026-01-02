@@ -104,11 +104,75 @@ export async function documentsRoutes(app: FastifyInstance) {
           properties: {
             id: { type: "string" },
           },
+          required: ["id"],
         },
         response: {
           200: {
             description: "Dados do documento",
             type: "object",
+            properties: {
+              id: { type: "string" },
+              name: { type: "string" },
+              type: { type: "string" },
+              description: { type: "string", nullable: true },
+              fileUrl: { type: "string" },
+              fileSize: { type: "number" },
+              uploadedById: { type: "string" },
+              projectId: { type: "string", nullable: true },
+              phaseId: { type: "string", nullable: true },
+              taskId: { type: "string", nullable: true },
+              createdAt: { type: "string", format: "date-time" },
+              uploadedBy: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  name: { type: "string" },
+                  email: { type: "string" },
+                },
+                required: ["id", "name", "email"],
+              },
+              project: {
+                type: "object",
+                nullable: true,
+                properties: {
+                  id: { type: "string" },
+                  name: { type: "string" },
+                  managerId: { type: "string" },
+                  // adicione outros campos do projeto que são retornados
+                },
+              },
+              phase: {
+                type: "object",
+                nullable: true,
+                properties: {
+                  id: { type: "string" },
+                  name: { type: "string" },
+                  projectId: { type: "string" },
+                  // adicione outros campos da fase que são retornados
+                },
+              },
+              task: {
+                type: "object",
+                nullable: true,
+                properties: {
+                  id: { type: "string" },
+                  title: { type: "string" },
+                  assignedToId: { type: "string", nullable: true },
+                  phaseId: { type: "string" },
+                  // adicione outros campos da tarefa que são retornados
+                },
+              },
+            },
+            required: [
+              "id",
+              "name",
+              "type",
+              "fileUrl",
+              "fileSize",
+              "uploadedById",
+              "createdAt",
+              "uploadedBy",
+            ],
           },
           403: {
             description: "Sem permissão",
@@ -116,6 +180,7 @@ export async function documentsRoutes(app: FastifyInstance) {
             properties: {
               error: { type: "string" },
             },
+            required: ["error"],
           },
           404: {
             description: "Documento não encontrado",
@@ -123,6 +188,7 @@ export async function documentsRoutes(app: FastifyInstance) {
             properties: {
               error: { type: "string" },
             },
+            required: ["error"],
           },
         },
       },
