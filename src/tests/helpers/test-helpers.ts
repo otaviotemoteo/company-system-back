@@ -32,7 +32,7 @@ export class TestHelpers {
     data?: {
       title?: string;
       description?: string;
-    }
+    },
   ) {
     return await prisma.project.create({
       data: {
@@ -46,7 +46,7 @@ export class TestHelpers {
   static async addProjectMember(
     projectId: string,
     userId: string,
-    role: string = "Desenvolvedor"
+    role: string = "Desenvolvedor",
   ) {
     return await prisma.projectMember.create({
       data: {
@@ -63,7 +63,7 @@ export class TestHelpers {
       name?: string;
       description?: string;
       order?: number;
-    }
+    },
   ) {
     return await prisma.projectPhase.create({
       data: {
@@ -83,7 +83,7 @@ export class TestHelpers {
       assignedToId?: string;
       priority?: "BAIXA" | "MEDIA" | "ALTA" | "URGENTE";
       estimatedHours?: number;
-    }
+    },
   ) {
     return await prisma.task.create({
       data: {
@@ -108,7 +108,7 @@ export class TestHelpers {
       taskId?: string;
       fileUrl?: string;
       fileSize?: number;
-    }
+    },
   ) {
     return await prisma.document.create({
       data: {
@@ -125,9 +125,25 @@ export class TestHelpers {
     });
   }
 
+  static async createComment(
+    authorId: string,
+    taskId: string,
+    data?: {
+      content?: string;
+    },
+  ) {
+    return await prisma.comment.create({
+      data: {
+        content: data?.content || "Test comment content",
+        authorId,
+        taskId,
+      },
+    });
+  }
+
   static generateToken(
     app: FastifyInstance,
-    user: { id: string; email: string; role: string }
+    user: { id: string; email: string; role: string },
   ) {
     return app.jwt.sign({
       id: user.id,
