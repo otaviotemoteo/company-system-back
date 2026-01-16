@@ -10,6 +10,7 @@ import { phasesRoutes } from "./modules/phases/phases.routes";
 import { tasksRoutes } from "./modules/tasks/tasks.routes";
 import { documentsRoutes } from "./modules/documents/documents.routes";
 import { commentsRoutes } from "./modules/comments/comments.routes";
+import { dashboardRoutes } from "./modules/dashboard/dashboard.routes";
 
 export async function buildApp() {
   const app = Fastify({
@@ -34,6 +35,7 @@ export async function buildApp() {
   await app.register(tasksRoutes, { prefix: "/api/tasks" });
   await app.register(documentsRoutes, { prefix: "/api/documents" });
   await app.register(commentsRoutes, { prefix: "/api/comments" });
+  await app.register(dashboardRoutes, { prefix: "/api/dashboard" });
 
   await app.ready();
 
