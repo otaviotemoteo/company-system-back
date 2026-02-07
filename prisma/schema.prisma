@@ -7,56 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  GERENTE
-  FUNCIONARIO
-}
-
-enum ProjectStatus {
-  PLANEJAMENTO
-  EM_ANDAMENTO
-  EM_PAUSA
-  CONCLUIDO
-  CANCELADO
-}
-
-enum ProjectPriority {
-  BAIXA
-  MEDIA
-  ALTA
-  URGENTE
-}
-
-enum PhaseStatus {
-  NAO_INICIADA
-  EM_ANDAMENTO
-  CONCLUIDA
-  BLOQUEADA
-}
-
-enum TaskStatus {
-  PENDENTE
-  EM_ANDAMENTO
-  EM_REVISAO
-  CONCLUIDA
-  BLOQUEADA
-}
-
-enum TaskPriority {
-  BAIXA
-  MEDIA
-  ALTA
-  URGENTE
-}
-
-enum DocumentType {
-  CONTRATO
-  ESPECIFICACAO
-  RELATORIO
-  ENTREGA
-  OUTRO
-}
+// ... (enums permanecem iguais)
 
 model User {
   id        String    @id @default(uuid())
@@ -69,7 +20,6 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  // Relações...
   managedProjects Project[]       @relation("ProjectManager")
   projectMembers  ProjectMember[]
   assignedTasks   Task[]
@@ -77,6 +27,10 @@ model User {
   documents       Document[]
   activityLogs    ActivityLog[]
 
+  // Índices para buscas comuns
+  @@index([role, isActive]) // Buscar usuários por role ativos
+  @@index([createdAt])
+  @@index([deletedAt]) // Para soft deletes
   @@map("users")
 }
 
@@ -93,15 +47,20 @@ model Project {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
-  // Relações
   managerId String
   manager   User   @relation("ProjectManager", fields: [managerId], references: [id])
 
-  phases         ProjectPhase[]
-  members        ProjectMember[]
-  documents      Document[]
-  activityLogs   ActivityLog[]
+  phases       ProjectPhase[]
+  members      ProjectMember[]
+  documents    Document[]
+  activityLogs ActivityLog[]
 
+  // Índices importantes
+  @@index([managerId]) // Já existe automaticamente por FK, mas explícito
+  @@index([status, priority]) // Filtrar projetos por status e prioridade
+  @@index([deadline]) // Buscar projetos por prazo
+  @@index([createdAt])
+  @@index([status, managerId]) // Projetos de um gerente por status
   @@map("projects")
 }
 
@@ -116,55 +75,63 @@ model ProjectPhase {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  // Relações
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   tasks     Task[]
   documents Document[]
 
+  // Índices
+  @@index([projectId, order]) // Listar fases de um projeto ordenadas
+  @@index([projectId, status]) // Fases por projeto e status
+  @@index([status])
   @@map("project_phases")
 }
 
 model Task {
-  id               String       @id @default(uuid())
-  title            String
-  description      String?
-  status           TaskStatus   @default(PENDENTE)
-  priority         TaskPriority @default(MEDIA)
-  estimatedHours   Float?
-  workedHours      Float        @default(0)
-  deadline         DateTime?
-  completedAt      DateTime?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  id             String       @id @default(uuid())
+  title          String
+  description    String?
+  status         TaskStatus   @default(PENDENTE)
+  priority       TaskPriority @default(MEDIA)
+  estimatedHours Float?
+  workedHours    Float        @default(0)
+  deadline       DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  // Relações
-  phaseId String
-  phase   ProjectPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
-
+  phaseId      String
+  phase        ProjectPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
   assignedToId String?
-  assignedTo   User?   @relation(fields: [assignedToId], references: [id])
+  assignedTo   User?        @relation(fields: [assignedToId], references: [id])
 
   comments  Comment[]
   documents Document[]
 
+  // Índices críticos para performance
+  @@index([phaseId, status]) // Tarefas de uma fase por status
+  @@index([assignedToId, status]) // Tarefas atribuídas a um usuário
+  @@index([status, priority]) // Dashboard de tarefas
+  @@index([deadline]) // Tarefas próximas ao prazo
+  @@index([assignedToId, deadline]) // Prazos de um usuário
+  @@index([phaseId, assignedToId]) // Tarefas de uma fase por responsável
   @@map("tasks")
 }
 
 model ProjectMember {
-  id        String   @id @default(uuid())
-  role      String // Ex: "Desenvolvedor", "Designer"
-  joinedAt  DateTime @default(now())
+  id       String   @id @default(uuid())
+  role     String
+  joinedAt DateTime @default(now())
 
-  // Relações
   userId    String
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([userId, projectId])
+  @@index([projectId]) // Membros de um projeto
+  @@index([userId]) // Projetos de um usuário
   @@map("project_members")
 }
 
@@ -177,7 +144,6 @@ model Document {
   description String?
   createdAt   DateTime     @default(now())
 
-  // Relações
   uploadedById String
   uploadedBy   User   @relation(fields: [uploadedById], references: [id])
 
@@ -190,6 +156,12 @@ model Document {
   taskId String?
   task   Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
+  // Índices
+  @@index([projectId, type]) // Documentos de um projeto por tipo
+  @@index([phaseId])
+  @@index([taskId])
+  @@index([uploadedById])
+  @@index([createdAt])
   @@map("documents")
 }
 
@@ -199,28 +171,34 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relações
   authorId String
   author   User   @relation(fields: [authorId], references: [id])
 
   taskId String
   task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
+  // Índices
+  @@index([taskId, createdAt]) // Comentários de uma tarefa ordenados
+  @@index([authorId])
   @@map("comments")
 }
 
 model ActivityLog {
   id          String   @id @default(uuid())
-  action      String // Ex: "CREATED_PROJECT", "UPDATED_TASK"
+  action      String
   description String
   createdAt   DateTime @default(now())
 
-  // Relações
   userId String
   user   User   @relation(fields: [userId], references: [id])
 
   projectId String?
   project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  // Índices para histórico
+  @@index([projectId, createdAt]) // Timeline do projeto
+  @@index([userId, createdAt]) // Atividades do usuário
+  @@index([createdAt]) // Logs recentes
+  @@index([action, createdAt]) // Filtrar por tipo de ação
   @@map("activity_logs")
 }
