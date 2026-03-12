@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # PostgreSQL (já que você usa Prisma)
+  # PostgreSQL database
   postgres:
     image: postgres:16-alpine
     container_name: company-postgres
@@ -15,8 +15,13 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - company-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  # Redis
+  # Redis cache
   redis:
     image: redis:7-alpine
     container_name: company-redis
@@ -26,7 +31,39 @@ services:
       - redis_data:/data
     networks:
       - company-network
-    command: redis-server --appendonly yes # Persistência de dados
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend app
+  app:
+    build: .
+    container_name: company-app
+    environment:
+      # Inside Docker, containers talk to each other via service name, not localhost
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-company_db}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret}
+      PORT: 3333
+      NODE_ENV: development
+    ports:
+      - "3333:3333"
+    volumes:
+      # Mount source code for hot reload — changes on your machine reflect instantly
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+      # node_modules stays inside the container (avoids cross-platform binary issues)
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - company-network
 
 volumes:
   postgres_data:
