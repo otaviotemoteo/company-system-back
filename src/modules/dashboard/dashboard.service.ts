@@ -1,8 +1,15 @@
 import { prisma } from "../../config/database";
+import { getCache, setCache } from "../../config/redis";
+
+const TTL = 5 * 60; // 5 minutos
 
 export class DashboardService {
   // Dashboard para ADMIN
   async getAdminDashboard() {
+    const cacheKey = "dashboard:admin";
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
     // Total de usuários
     const totalUsuarios = await prisma.user.count();
 
@@ -66,7 +73,7 @@ export class DashboardService {
       },
     });
 
-    return {
+    const result = {
       totalUsuarios,
       totalProjetos,
       totalTarefas,
@@ -86,10 +93,17 @@ export class DashboardService {
       projetosRecentes,
       tarefasAtrasadas,
     };
+
+    await setCache(cacheKey, result, TTL);
+    return result;
   }
 
   // Dashboard para GERENTE
   async getGerenteDashboard(userId: string) {
+    const cacheKey = `dashboard:gerente:${userId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
     // Total de projetos do gerente
     const totalProjetos = await prisma.project.count({
       where: {
@@ -229,7 +243,7 @@ export class DashboardService {
       },
     });
 
-    return {
+    const result = {
       totalProjetos,
       totalTarefas,
       totalMembros: totalMembros.length,
@@ -247,10 +261,17 @@ export class DashboardService {
       proximosDeadlines,
       meusProjetosRecentes,
     };
+
+    await setCache(cacheKey, result, TTL);
+    return result;
   }
 
   // Dashboard para FUNCIONARIO
   async getFuncionarioDashboard(userId: string) {
+    const cacheKey = `dashboard:funcionario:${userId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
     // Total de tarefas atribuídas
     const totalMinhasTarefas = await prisma.task.count({
       where: {
@@ -385,7 +406,7 @@ export class DashboardService {
       },
     });
 
-    return {
+    const result = {
       minhasTarefas: {
         total: totalMinhasTarefas,
         pendentes: statusCounts.PENDENTE,
@@ -401,5 +422,8 @@ export class DashboardService {
       tarefasRecentes,
       projetosOndeEMembro,
     };
+
+    await setCache(cacheKey, result, TTL);
+    return result;
   }
 }

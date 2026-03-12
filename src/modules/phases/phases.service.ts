@@ -1,5 +1,8 @@
 import { prisma } from "../../config/database";
+import { getCache, setCache, invalidateCache } from "../../config/redis";
 import { CreatePhaseInput, UpdatePhaseInput } from "./phases.schemas";
+
+const TTL = 15 * 60; // 15 minutos
 
 export class PhasesService {
   // Listar fases de um projeto (com validação de permissão)
@@ -30,7 +33,10 @@ export class PhasesService {
       }
     }
 
-    // Listar fases ordenadas
+    const cacheKey = `phases:project:${projectId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
     const phases = await prisma.projectPhase.findMany({
       where: { projectId },
       include: {
@@ -46,33 +52,43 @@ export class PhasesService {
       },
     });
 
+    await setCache(cacheKey, phases, TTL);
     return phases;
   }
 
   // Buscar fase por ID
   async findById(phaseId: string, userId: string, userRole: string) {
-    const phase = await prisma.projectPhase.findUnique({
-      where: { id: phaseId },
-      include: {
-        project: true,
-        tasks: {
-          orderBy: {
-            createdAt: "desc",
-          },
-        },
-        _count: {
-          select: {
-            documents: true,
-          },
-        },
-      },
-    });
+    const cacheKey = `phases:detail:${phaseId}`;
+    const cached = await getCache(cacheKey);
+
+    let phase = cached as Awaited<ReturnType<typeof prisma.projectPhase.findUnique>> | null;
 
     if (!phase) {
-      throw new Error("Fase não encontrada");
+      phase = await prisma.projectPhase.findUnique({
+        where: { id: phaseId },
+        include: {
+          project: true,
+          tasks: {
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
+          _count: {
+            select: {
+              documents: true,
+            },
+          },
+        },
+      });
+
+      if (!phase) {
+        throw new Error("Fase não encontrada");
+      }
+
+      await setCache(cacheKey, phase, TTL);
     }
 
-    // Validar permissão
+    // Validar permissão (sempre, mesmo com cache hit)
     if (userRole !== "ADMIN") {
       const isManager = phase.project.managerId === userId;
       const isMember = await prisma.projectMember.findUnique({
@@ -94,7 +110,6 @@ export class PhasesService {
 
   // Criar fase (ADMIN ou GERENTE do projeto)
   async create(data: CreatePhaseInput, userId: string, userRole: string) {
-    // Verificar se projeto existe
     const project = await prisma.project.findUnique({
       where: { id: data.projectId },
     });
@@ -103,12 +118,10 @@ export class PhasesService {
       throw new Error("Projeto não encontrado");
     }
 
-    // Validar permissão (ADMIN ou GERENTE do projeto)
     if (userRole !== "ADMIN" && project.managerId !== userId) {
       throw new Error("Sem permissão para criar fases neste projeto");
     }
 
-    // Criar fase
     const phase = await prisma.projectPhase.create({
       data: {
         name: data.name,
@@ -119,6 +132,12 @@ export class PhasesService {
         endDate: data.endDate ? new Date(data.endDate) : null,
       },
     });
+
+    // Nova fase invalida a lista de fases do projeto e o detail do projeto
+    await Promise.all([
+      invalidateCache(`phases:project:${data.projectId}`),
+      invalidateCache(`projects:detail:${data.projectId}`),
+    ]);
 
     return phase;
   }
@@ -141,12 +160,10 @@ export class PhasesService {
       throw new Error("Fase não encontrada");
     }
 
-    // Validar permissão
     if (userRole !== "ADMIN" && phase.project.managerId !== userId) {
       throw new Error("Sem permissão para editar esta fase");
     }
 
-    // Atualizar fase
     const updatedPhase = await prisma.projectPhase.update({
       where: { id: phaseId },
       data: {
@@ -158,6 +175,11 @@ export class PhasesService {
         endDate: data.endDate ? new Date(data.endDate) : undefined,
       },
     });
+
+    await Promise.all([
+      invalidateCache(`phases:detail:${phaseId}`),
+      invalidateCache(`phases:project:${phase.projectId}`),
+    ]);
 
     return updatedPhase;
   }
@@ -175,15 +197,19 @@ export class PhasesService {
       throw new Error("Fase não encontrada");
     }
 
-    // Validar permissão
     if (userRole !== "ADMIN" && phase.project.managerId !== userId) {
       throw new Error("Sem permissão para deletar esta fase");
     }
 
-    // Deletar fase (cascade vai deletar tarefas e documentos)
     await prisma.projectPhase.delete({
       where: { id: phaseId },
     });
+
+    await Promise.all([
+      invalidateCache(`phases:detail:${phaseId}`),
+      invalidateCache(`phases:project:${phase.projectId}`),
+      invalidateCache(`projects:detail:${phase.projectId}`),
+    ]);
 
     return { message: "Fase deletada com sucesso" };
   }
@@ -195,7 +221,6 @@ export class PhasesService {
     userId: string,
     userRole: string
   ) {
-    // Verificar se projeto existe
     const project = await prisma.project.findUnique({
       where: { id: projectId },
     });
@@ -204,12 +229,10 @@ export class PhasesService {
       throw new Error("Projeto não encontrado");
     }
 
-    // Validar permissão
     if (userRole !== "ADMIN" && project.managerId !== userId) {
       throw new Error("Sem permissão para reordenar fases deste projeto");
     }
 
-    // Atualizar ordem de cada fase
     await prisma.$transaction(
       phaseOrders.map((item) =>
         prisma.projectPhase.update({
@@ -219,11 +242,13 @@ export class PhasesService {
       )
     );
 
-    // Retornar fases reordenadas
     const phases = await prisma.projectPhase.findMany({
       where: { projectId },
       orderBy: { order: "asc" },
     });
+
+    // Invalida a lista de fases — ordem mudou
+    await invalidateCache(`phases:project:${projectId}`);
 
     return phases;
   }

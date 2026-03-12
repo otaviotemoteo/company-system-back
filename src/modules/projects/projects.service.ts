@@ -1,16 +1,25 @@
 import { prisma } from "../../config/database";
+import { getCache, setCache, invalidateCache, invalidatePattern } from "../../config/redis";
 import {
   CreateProjectInput,
   UpdateProjectInput,
   AddMemberInput,
 } from "./projects.schemas";
 
+const TTL = 10 * 60; // 10 minutos
+
 export class ProjectsService {
   // Listar projetos (filtrado por role)
   async findAll(userId: string, userRole: string) {
+    const cacheKey = `projects:list:${userId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
+    let result;
+
     // ADMIN vê todos os projetos
     if (userRole === "ADMIN") {
-      return await prisma.project.findMany({
+      result = await prisma.project.findMany({
         include: {
           manager: {
             select: {
@@ -33,8 +42,8 @@ export class ProjectsService {
     }
 
     // GERENTE vê apenas projetos onde é gerente
-    if (userRole === "GERENTE") {
-      return await prisma.project.findMany({
+    else if (userRole === "GERENTE") {
+      result = await prisma.project.findMany({
         where: {
           managerId: userId,
         },
@@ -60,78 +69,92 @@ export class ProjectsService {
     }
 
     // FUNCIONARIO vê apenas projetos onde é membro
-    return await prisma.project.findMany({
-      where: {
-        members: {
-          some: {
-            userId: userId,
+    else {
+      result = await prisma.project.findMany({
+        where: {
+          members: {
+            some: {
+              userId: userId,
+            },
           },
         },
-      },
-      include: {
-        manager: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+        include: {
+          manager: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          _count: {
+            select: {
+              phases: true,
+              members: true,
+            },
           },
         },
-        _count: {
-          select: {
-            phases: true,
-            members: true,
-          },
+        orderBy: {
+          createdAt: "desc",
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+      });
+    }
+
+    await setCache(cacheKey, result, TTL);
+    return result;
   }
 
   // Buscar projeto por ID (com validação de permissão)
   async findById(projectId: string, userId: string, userRole: string) {
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-      include: {
-        manager: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
+    const cacheKey = `projects:detail:${projectId}`;
+    const cached = await getCache(cacheKey);
+
+    let project = cached as Awaited<ReturnType<typeof prisma.project.findUnique>> | null;
+
+    if (!project) {
+      project = await prisma.project.findUnique({
+        where: { id: projectId },
+        include: {
+          manager: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+            },
           },
-        },
-        members: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                role: true,
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  role: true,
+                },
               },
             },
           },
-        },
-        phases: {
-          orderBy: {
-            order: "asc",
+          phases: {
+            orderBy: {
+              order: "asc",
+            },
+          },
+          _count: {
+            select: {
+              documents: true,
+            },
           },
         },
-        _count: {
-          select: {
-            documents: true,
-          },
-        },
-      },
-    });
+      });
 
-    if (!project) {
-      throw new Error("Projeto não encontrado");
+      if (!project) {
+        throw new Error("Projeto não encontrado");
+      }
+
+      await setCache(cacheKey, project, TTL);
     }
 
-    // Validar permissão
+    // Validar permissão (sempre, mesmo com cache hit)
     if (userRole !== "ADMIN") {
       const isManager = project.managerId === userId;
       const isMember = project.members.some((m) => m.userId === userId);
@@ -159,7 +182,6 @@ export class ProjectsService {
       throw new Error("Usuário informado não é gerente");
     }
 
-    // Criar projeto
     const project = await prisma.project.create({
       data: {
         title: data.title,
@@ -181,6 +203,14 @@ export class ProjectsService {
         },
       },
     });
+
+    // Novo projeto invalida todas as listas (qualquer usuário pode ter sua lista afetada)
+    // e o dashboard admin (totalProjetos muda)
+    await Promise.all([
+      invalidatePattern("projects:list:*"),
+      invalidateCache("dashboard:admin"),
+      invalidateCache(`dashboard:gerente:${data.managerId}`),
+    ]);
 
     return project;
   }
@@ -220,7 +250,6 @@ export class ProjectsService {
       }
     }
 
-    // Atualizar projeto
     const updatedProject = await prisma.project.update({
       where: { id: projectId },
       data: {
@@ -245,6 +274,13 @@ export class ProjectsService {
       },
     });
 
+    await Promise.all([
+      invalidateCache(`projects:detail:${projectId}`),
+      invalidatePattern("projects:list:*"),
+      invalidateCache("dashboard:admin"),
+      invalidateCache(`dashboard:gerente:${project.managerId}`),
+    ]);
+
     return updatedProject;
   }
 
@@ -258,10 +294,17 @@ export class ProjectsService {
       throw new Error("Projeto não encontrado");
     }
 
-    // Deletar projeto (cascade vai deletar fases, tarefas, etc)
     await prisma.project.delete({
       where: { id: projectId },
     });
+
+    await Promise.all([
+      invalidateCache(`projects:detail:${projectId}`),
+      invalidateCache(`projects:members:${projectId}`),
+      invalidatePattern("projects:list:*"),
+      invalidateCache("dashboard:admin"),
+      invalidateCache(`dashboard:gerente:${project.managerId}`),
+    ]);
 
     return { message: "Projeto deletado com sucesso" };
   }
@@ -309,7 +352,6 @@ export class ProjectsService {
       throw new Error("Usuário já é membro deste projeto");
     }
 
-    // Adicionar membro
     const member = await prisma.projectMember.create({
       data: {
         userId: data.userId,
@@ -327,6 +369,14 @@ export class ProjectsService {
         },
       },
     });
+
+    // Invalida o detail do projeto (membros mudaram) e a lista do novo membro
+    await Promise.all([
+      invalidateCache(`projects:detail:${projectId}`),
+      invalidateCache(`projects:members:${projectId}`),
+      invalidateCache(`projects:list:${data.userId}`),
+      invalidateCache(`dashboard:funcionario:${data.userId}`),
+    ]);
 
     return member;
   }
@@ -365,7 +415,6 @@ export class ProjectsService {
       throw new Error("Membro não encontrado neste projeto");
     }
 
-    // Remover membro
     await prisma.projectMember.delete({
       where: {
         userId_projectId: {
@@ -375,11 +424,22 @@ export class ProjectsService {
       },
     });
 
+    await Promise.all([
+      invalidateCache(`projects:detail:${projectId}`),
+      invalidateCache(`projects:members:${projectId}`),
+      invalidateCache(`projects:list:${memberId}`),
+      invalidateCache(`dashboard:funcionario:${memberId}`),
+    ]);
+
     return { message: "Membro removido com sucesso" };
   }
 
   // Listar membros do projeto
   async getMembers(projectId: string, userId: string, userRole: string) {
+    const cacheKey = `projects:members:${projectId}`;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
     const project = await prisma.project.findUnique({
       where: { id: projectId },
     });
@@ -419,6 +479,7 @@ export class ProjectsService {
       },
     });
 
+    await setCache(cacheKey, members, TTL);
     return members;
   }
 }
