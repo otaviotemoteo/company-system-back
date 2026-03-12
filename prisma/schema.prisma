@@ -7,7 +7,56 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ... (enums permanecem iguais)
+enum Role {
+  ADMIN
+  GERENTE
+  FUNCIONARIO
+}
+
+enum ProjectStatus {
+  PLANEJAMENTO
+  EM_ANDAMENTO
+  EM_PAUSA
+  CONCLUIDO
+  CANCELADO
+}
+
+enum ProjectPriority {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum PhaseStatus {
+  NAO_INICIADA
+  EM_ANDAMENTO
+  CONCLUIDA
+  BLOQUEADA
+}
+
+enum TaskStatus {
+  PENDENTE
+  EM_ANDAMENTO
+  EM_REVISAO
+  CONCLUIDA
+  BLOQUEADA
+}
+
+enum TaskPriority {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum DocumentType {
+  CONTRATO
+  ESPECIFICACAO
+  RELATORIO
+  ENTREGA
+  OUTRO
+}
 
 model User {
   id        String    @id @default(uuid())
